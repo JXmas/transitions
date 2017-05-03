@@ -82,6 +82,10 @@ class AGraph(Diagram):
             else:
                 shape = self.style_attributes['node']['default']['shape']
                 self.seen.append(state.name)
+                label = "<before={before}<br/><b>{name}</b><br/>after={after}>".format(
+                    name=state.name,
+                    before=[],
+                    after=[])
                 container.add_node(n=state.name, shape=shape)
 
     def _add_edges(self, events, container):
@@ -100,6 +104,11 @@ class AGraph(Diagram):
                 for t in transitions[1]:
                     dst = self.machine.get_state(t.dest)
                     edge_label = self._transition_label(label, t)
+                    tail_label = "<font point-size='10'>before=[{before}]</font>".format(before=", ".join(t.before))
+                    head_label = "<font point-size='10'>after=[{after}]</font>".format(after=", ".join(t.after))
+                    edge_label = "<{befores}<br/>{label}<br/>{afters}>".format(label=edge_label,
+                                                                               befores=tail_label,
+                                                                               afters=head_label)
                     lhead = ''
 
                     if hasattr(dst, 'children') and len(dst.children) > 0:
@@ -115,7 +124,7 @@ class AGraph(Diagram):
                         continue
                     elif container.has_edge(src.name, dst.name):
                         edge = container.get_edge(src.name, dst.name)
-                        edge.attr['label'] = edge.attr['label'] + ' | ' + edge_label
+                        edge.attr['label'] = "<" + edge.attr['label'] + ' <br/>or<br/> ' + (edge_label[1:] if edge_label.startswith("<") else edge_label)
                     else:
                         container.add_edge(src.name, dst.name, label=edge_label, ltail=ltail, lhead=lhead)
 
@@ -123,7 +132,7 @@ class AGraph(Diagram):
         if self.machine.show_conditions and tran.conditions:
             return '{edge_label} [{conditions}]'.format(
                 edge_label=edge_label,
-                conditions=' & '.join(
+                conditions=' &amp; '.join(
                     c.func if c.target else '!' + c.func
                     for c in tran.conditions
                 ),
@@ -150,7 +159,6 @@ class AGraph(Diagram):
         self._add_edges(self.machine.events, fsm_graph)
 
         setattr(fsm_graph, 'style_attributes', self.style_attributes)
-
         return fsm_graph
 
 
