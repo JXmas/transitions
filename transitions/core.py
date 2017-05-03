@@ -104,7 +104,9 @@ class Condition(object):
                 model attached to the current machine which is used to invoke
                 the condition.
             """
-            predicate = getattr(event_data.model, self.func) if isinstance(self.func, string_types) else self.func
+            if isinstance(self.func, string_types):
+                func = reduce(lambda obj, attr: getattr(obj, attr), self.func.split("."), event_data.model)
+            predicate = func if isinstance(self.func, string_types) else self.func
 
             if event_data.machine.send_event:
                 return predicate(event_data) == self.target
@@ -337,7 +339,6 @@ class Machine(object):
 
             **kwargs additional arguments passed to next class in MRO. This can be ignored in most cases.
         """
-
         try:
             super(Machine, self).__init__(**kwargs)
         except TypeError as e:
@@ -575,7 +576,7 @@ class Machine(object):
                 from (if event sending is disabled).
         """
         if isinstance(func, string_types):
-            func = getattr(event_data.model, func)
+            func = reduce(lambda obj, attr: getattr(obj, attr), func.split("."), event_data.model)
 
         if self.send_event:
             func(event_data)
